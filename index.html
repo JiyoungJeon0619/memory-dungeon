@@ -234,7 +234,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <div id="auth-overlay" class="auth-overlay">
   <div class="auth-box">
     <div class="auth-logo">🏰 기억 던전</div>
-    <div class="auth-sub">엄마 vs 아들 · 기억력 훈련 · 던전 탐험</div>
+    <div class="auth-sub">엄마 vs 아이 · 기억력 훈련 · 던전 탐험</div>
     <button class="auth-google" onclick="googleLogin()" style="margin-bottom:12px;">
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.6 2.5 30.1 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.1z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.1 0 11.2-2 14.9-5.4l-7.6-5.9c-2 1.4-4.6 2.2-7.3 2.2-6.3 0-11.6-4.2-13.6-10l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
       Google로 로그인 (기록 동기화)
@@ -253,8 +253,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <div class="onboarding" id="onboarding">
   <div class="ob-box">
     <div class="ob-logo">🏰 기억 던전</div>
-    <div class="ob-sub">엄마 vs 아들 · 미션 · 교과 퀴즈 · 던전 탐험</div>
-    <div class="ob-label">아들 이름</div>
+    <div class="ob-sub">엄마 vs 아이 · 미션 · 교과 퀴즈 · 던전 탐험</div>
+    <div class="ob-label">아이 이름</div>
     <input class="ob-input" id="inp-son" placeholder="예: 민준" maxlength="8"/>
     <div class="ob-label">엄마 이름 (선택)</div>
     <input class="ob-input" id="inp-mom" placeholder="예: 엄마" maxlength="8"/>
@@ -291,7 +291,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="xpbar"><div class="xpfill" id="mom-xp" style="width:0%"></div></div>
     </div>
     <div class="pc son">
-      <div class="pc-name" id="son-name">⚔️ 아들</div>
+      <div class="pc-name" id="son-name">⚔️ 아이</div>
       <div class="pc-lv" id="son-lv">Lv.1 기억 견습생</div>
       <div class="pc-score" id="son-score">0점</div>
       <div class="xpbar"><div class="xpfill" id="son-xp" style="width:0%"></div></div>
@@ -348,7 +348,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="sec-title">🏆 전체 기록</div>
       <div class="stats-grid">
         <div class="stat-box"><div class="stat-val" style="color:var(--mom)" id="s-mom">0</div><div class="stat-lbl" id="s-mom-lbl">👑 엄마 총점</div></div>
-        <div class="stat-box"><div class="stat-val" style="color:var(--son)" id="s-son">0</div><div class="stat-lbl" id="s-son-lbl">⚔️ 아들 총점</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--son)" id="s-son">0</div><div class="stat-lbl" id="s-son-lbl">⚔️ 아이 총점</div></div>
         <div class="stat-box"><div class="stat-val" style="color:var(--accent)" id="s-missions">0</div><div class="stat-lbl">🎮 미션 완료</div></div>
         <div class="stat-box"><div class="stat-val" style="color:var(--accent3)" id="s-quizzes">0</div><div class="stat-lbl">🧠 퀴즈 완료</div></div>
       </div>
@@ -413,7 +413,7 @@ function guestStart() {
   document.getElementById('user-bar').style.display = 'flex';
   document.getElementById('user-email-txt').textContent = '👤 비로그인 (이 기기에만 저장)';
   const loaded = load();
-  if (!loaded || !S.sonName || S.sonName === '아들') {
+  if (!loaded || !S.sonName || S.sonName === '아이') {
     document.getElementById('onboarding').style.display = 'flex';
   } else {
     launch();
@@ -458,7 +458,7 @@ async function loadFromDB() {
       streak: data.streak,
       quizHistory: data.quiz_history || [],
       momName: data.mom_name || '엄마',
-      sonName: data.son_name || '아들',
+      sonName: data.son_name || '아이',
       grade: data.grade || 4,
       quizGrade: data.quiz_grade || 4,
     };
@@ -498,7 +498,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     const loaded = await loadFromDB();
     if (!loaded) load();
     // check if onboarding needed
-    if (!S.sonName || S.sonName === '아들') {
+    if (!S.sonName || S.sonName === '아이') {
       document.getElementById('onboarding').style.display = 'flex';
     } else {
       launch();
@@ -574,7 +574,7 @@ const DCORS=[
 const DROOM_ICONS=['','⚔','🧩','💎','❄','👑'];
 
 // ── STATE ────────────────────────────────
-const DEF={mom:{score:0,xp:0},son:{score:0,xp:0},completedMissions:[],streak:0,floorXP:0,quizHistory:[],totalMissions:0,totalQuizzes:0,grade:4,quizGrade:4,momName:'엄마',sonName:'아들'};
+const DEF={mom:{score:0,xp:0},son:{score:0,xp:0},completedMissions:[],streak:0,floorXP:0,quizHistory:[],totalMissions:0,totalQuizzes:0,grade:4,quizGrade:4,momName:'엄마',sonName:'아이'};
 let S={...DEF,mom:{...DEF.mom},son:{...DEF.son}};
 let curTurn='mom',turnScores={mom:0,son:0},curGame=null;
 let gTimer=null,timeLeft=0;
@@ -613,7 +613,7 @@ function load(){try{const r=localStorage.getItem('kd_v5');if(!r)return false;con
 // ── ONBOARDING ───────────────────────────
 function selGrade(g,btn){obGrade=g;document.querySelectorAll('.grade-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 function startApp(){
-  S.sonName=document.getElementById('inp-son').value.trim()||'아들';
+  S.sonName=document.getElementById('inp-son').value.trim()||'아이';
   S.momName=document.getElementById('inp-mom').value.trim()||'엄마';
   S.grade=obGrade;S.quizGrade=obGrade;
   saveToDB();launch();
@@ -637,7 +637,7 @@ function applyNames(){
 function openSettings(){
   openModal(`<div class="modal-hdr"><div class="modal-title">설정 변경</div><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div style="margin-bottom:13px">
-      <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin-bottom:7px">아들 이름</div>
+      <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin-bottom:7px">아이 이름</div>
       <input class="ans-input" id="edit-son" value="${S.sonName}" maxlength="8"/>
       <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin:9px 0 7px">엄마 이름</div>
       <input class="ans-input" id="edit-mom" value="${S.momName}" maxlength="8"/>
