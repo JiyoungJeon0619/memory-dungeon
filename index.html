@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기억 던전</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0f0e17;--surface:#1a1829;--card:#221f35;
+  --accent:#f5a623;--accent2:#7c5cbf;--accent3:#4ecdc4;
+  --danger:#ff6b6b;--success:#6bcb77;
+  --text:#fffffe;--muted:#a7a9be;
+  --mom:#f5a623;--son:#4ecdc4;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Nanum Gothic',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.35) 0%,transparent 100%),
+    radial-gradient(1px 1px at 65% 12%,rgba(255,255,255,.25) 0%,transparent 100%),
+    radial-gradient(1px 1px at 82% 58%,rgba(255,255,255,.2) 0%,transparent 100%),
+    radial-gradient(1px 1px at 8%  78%,rgba(255,255,255,.28) 0%,transparent 100%),
+    radial-gradient(2px 2px at 72% 88%,rgba(255,200,100,.25) 0%,transparent 100%),
+    radial-gradient(2px 2px at 14% 44%,rgba(100,200,255,.18) 0%,transparent 100%);}
+.container{max-width:800px;margin:0 auto;padding:16px;position:relative;z-index:1;}
+
+/* ── ONBOARDING ── */
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+.ob-box{background:var(--card);border-radius:28px;padding:30px 26px;width:100%;max-width:400px;border:1px solid rgba(255,255,255,.08);text-align:center;}
+.ob-logo{font-family:'Jua',sans-serif;font-size:2rem;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px;}
+.ob-sub{color:var(--muted);font-size:.8rem;margin-bottom:26px;}
+.ob-label{font-family:'Jua',sans-serif;font-size:.88rem;color:var(--muted);margin-bottom:8px;text-align:left;}
+.ob-input{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'Nanum Gothic',sans-serif;font-size:.95rem;width:100%;margin-bottom:13px;transition:border-color .2s;}
+.ob-input:focus{outline:none;border-color:var(--accent);}
+.grade-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:20px;}
+.grade-btn{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;cursor:pointer;color:var(--muted);font-family:'Jua',sans-serif;font-size:.88rem;transition:all .2s;}
+.grade-btn:hover{border-color:var(--accent2);color:var(--text);}
+.grade-btn.active{border-color:var(--accent2);background:rgba(124,92,191,.2);color:var(--accent2);}
+.ob-start{background:linear-gradient(135deg,var(--accent),#e8932a);border:none;border-radius:14px;padding:13px 22px;color:#000;font-family:'Jua',sans-serif;font-size:1rem;cursor:pointer;width:100%;box-shadow:0 4px 15px rgba(245,166,35,.3);transition:all .2s;}
+.ob-start:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(245,166,35,.4);}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 0 8px;}
+.logo{font-family:'Jua',sans-serif;font-size:1.4rem;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 14px rgba(245,166,35,.35));}
+.grade-badge{font-size:.7rem;background:rgba(124,92,191,.2);border:1px solid var(--accent2);color:var(--accent2);padding:3px 10px;border-radius:8px;font-family:'Jua',sans-serif;cursor:pointer;}
+
+/* ── PLAYERS ── */
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.pc{background:var(--card);border-radius:14px;padding:12px 14px;border:2px solid transparent;position:relative;overflow:hidden;}
+.pc::before{content:'';position:absolute;inset:0;opacity:.08;border-radius:13px;}
+.pc.mom{border-color:var(--mom);}.pc.mom::before{background:var(--mom);}
+.pc.son{border-color:var(--son);}.pc.son::before{background:var(--son);}
+.pc-name{font-family:'Jua',sans-serif;font-size:.95rem;}
+.pc.mom .pc-name{color:var(--mom);}.pc.son .pc-name{color:var(--son);}
+.pc-lv{font-size:.65rem;color:var(--muted);margin-top:1px;}
+.pc-score{font-family:'Jua',sans-serif;font-size:1.3rem;margin-top:4px;}
+.pc.mom .pc-score{color:var(--mom);}.pc.son .pc-score{color:var(--son);}
+.xpbar{height:4px;background:rgba(255,255,255,.1);border-radius:4px;margin-top:7px;overflow:hidden;}
+.xpfill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.34,1.56,.64,1);}
+.pc.mom .xpfill{background:var(--mom);}.pc.son .xpfill{background:var(--son);}
+
+/* ── DUNGEON MAP SECTION ── */
+.dmap-section{background:var(--card);border-radius:18px;border:1px solid rgba(255,255,255,.06);margin-bottom:12px;overflow:hidden;}
+.dmap-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;}
+.dmap-title{font-family:'Jua',sans-serif;font-size:.88rem;color:var(--muted);}
+.dmap-cur-room{font-size:.7rem;color:var(--accent);font-family:'Jua',sans-serif;}
+.dmap-canvas-wrap{position:relative;cursor:pointer;background:#080604;}
+.dmap-canvas-wrap canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;}
+.dmap-expand-hint{position:absolute;bottom:5px;right:7px;font-size:.58rem;color:rgba(245,166,35,.45);font-family:'Jua',sans-serif;pointer-events:none;}
+.dmap-footer{display:flex;align-items:center;gap:8px;padding:8px 14px 12px;}
+.dmap-prog-bar{flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+.dmap-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:4px;transition:width .8s ease;}
+.dmap-prog-txt{font-size:.62rem;color:var(--muted);white-space:nowrap;}
+
+/* ── TABS ── */
+.nav-tabs{display:flex;gap:6px;margin-bottom:10px;background:var(--card);border-radius:14px;padding:5px;}
+.nav-tab{flex:1;background:transparent;border:none;border-radius:10px;padding:9px 6px;color:var(--muted);font-family:'Jua',sans-serif;font-size:.82rem;cursor:pointer;transition:all .2s;text-align:center;}
+.nav-tab.active{background:var(--accent2);color:var(--text);}
+.nav-tab:hover:not(.active){color:var(--text);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── SECTION CARD ── */
+.sec{background:var(--card);border-radius:18px;padding:16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06);}
+.sec-title{font-family:'Jua',sans-serif;font-size:.88rem;color:var(--muted);margin-bottom:11px;display:flex;align-items:center;gap:5px;}
+
+/* ── MISSIONS ── */
+.mission-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mb{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 6px;cursor:pointer;text-align:center;transition:all .2s;color:var(--text);position:relative;overflow:hidden;}
+.mb:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px rgba(245,166,35,.18);}
+.mb.locked{opacity:.4;cursor:not-allowed;}
+.mb.locked:hover{transform:none;box-shadow:none;border-color:rgba(255,255,255,.07);}
+.mb-icon{font-size:1.45rem;display:block;margin-bottom:4px;}
+.mb-label{font-size:.72rem;font-weight:700;display:block;}
+.mb-xp{font-size:.62rem;color:var(--accent);margin-top:2px;display:block;}
+.mb-badge{position:absolute;top:5px;right:5px;background:var(--success);color:#000;font-size:.52rem;font-weight:800;padding:2px 5px;border-radius:5px;}
+.streak-row{display:flex;gap:5px;margin-bottom:11px;}
+.sd{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s;}
+.sd.on{background:var(--accent);box-shadow:0 0 5px var(--accent);}
+
+/* ── STUDY ── */
+.grade-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+.gs-btn{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:9px;padding:6px 11px;cursor:pointer;color:var(--muted);font-family:'Jua',sans-serif;font-size:.75rem;transition:all .2s;}
+.gs-btn:hover{border-color:var(--accent2);color:var(--text);}
+.gs-btn.active{border-color:var(--accent2);background:rgba(124,92,191,.2);color:var(--accent2);}
+.unit-card{background:linear-gradient(135deg,rgba(124,92,191,.14),rgba(78,205,196,.09));border:1px solid rgba(124,92,191,.28);border-radius:12px;padding:12px;margin-bottom:12px;}
+.unit-date{font-size:.68rem;color:var(--accent2);font-weight:800;margin-bottom:4px;}
+.unit-title{font-family:'Jua',sans-serif;font-size:.88rem;margin-bottom:3px;}
+.unit-desc{font-size:.72rem;color:var(--muted);line-height:1.6;}
+.subj-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sq-btn{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 10px;cursor:pointer;text-align:center;transition:all .22s;color:var(--text);font-family:'Jua',sans-serif;font-size:.88rem;}
+.sq-btn:hover{border-color:var(--accent2);transform:translateY(-2px);box-shadow:0 5px 16px rgba(124,92,191,.22);}
+.sq-sub{display:block;font-size:.62rem;color:var(--muted);font-family:'Nanum Gothic',sans-serif;margin-top:3px;font-weight:400;line-height:1.4;}
+.qr-item{background:var(--surface);border-radius:10px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:8px;}
+.qr-subj{font-size:.66rem;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap;}
+.qr-q{font-size:.78rem;flex:1;line-height:1.4;color:var(--muted);}
+.qr-time{font-size:.62rem;color:var(--muted);white-space:nowrap;}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-box{background:var(--surface);border-radius:11px;padding:11px;text-align:center;}
+.stat-val{font-family:'Jua',sans-serif;font-size:1.3rem;}
+.stat-lbl{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.reset-btn{background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:7px 13px;color:var(--muted);font-family:'Nanum Gothic',sans-serif;font-size:.72rem;cursor:pointer;transition:all .2s;margin-top:8px;}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.86);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.active{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border-radius:22px;padding:24px 20px;width:100%;max-width:450px;border:1px solid rgba(255,255,255,.09);transform:scale(.9) translateY(20px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-height:86vh;overflow-y:auto;}
+.modal-overlay.active .modal{transform:scale(1) translateY(0);}
+.modal-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.modal-title{font-family:'Jua',sans-serif;font-size:1.15rem;color:var(--accent);}
+.modal-close{background:rgba(255,255,255,.1);border:none;color:var(--text);width:27px;height:27px;border-radius:50%;cursor:pointer;font-size:.88rem;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:rgba(255,255,255,.18);}
+.turn-ind{text-align:center;padding:8px 13px;border-radius:11px;margin-bottom:14px;font-weight:700;font-size:.86rem;}
+.turn-ind.mom-t{background:rgba(245,166,35,.14);color:var(--mom);border:1px solid var(--mom);}
+.turn-ind.son-t{background:rgba(78,205,196,.14);color:var(--son);border:1px solid var(--son);}
+.mem-items{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:13px 0;}
+.mem-item{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 13px;font-size:.92rem;font-weight:700;text-align:center;animation:popIn .28s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes popIn{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.tbar{height:7px;background:rgba(255,255,255,.1);border-radius:8px;margin:11px 0;overflow:hidden;}
+.tbar-fill{height:100%;background:linear-gradient(90deg,var(--success),var(--accent),var(--danger));border-radius:8px;transition:width .1s linear;}
+.phase-lbl{text-align:center;font-size:.76rem;color:var(--muted);margin-bottom:11px;}
+.ans-input{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 14px;color:var(--text);font-family:'Nanum Gothic',sans-serif;font-size:.92rem;width:100%;margin:7px 0;transition:border-color .2s;}
+.ans-input:focus{outline:none;border-color:var(--accent);}
+.ans-opts{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:9px 0;}
+.opt{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:11px;padding:10px;color:var(--text);font-family:'Nanum Gothic',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;transition:all .18s;text-align:center;}
+.opt:hover{border-color:var(--accent);background:rgba(245,166,35,.09);}
+.opt.correct{border-color:var(--success);background:rgba(107,203,119,.18);color:var(--success);}
+.opt.wrong{border-color:var(--danger);background:rgba(255,107,107,.18);color:var(--danger);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#e8932a);border:none;border-radius:13px;padding:12px 20px;color:#000;font-family:'Jua',sans-serif;font-size:.92rem;cursor:pointer;width:100%;transition:all .2s;margin-top:10px;box-shadow:0 4px 14px rgba(245,166,35,.28);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 7px 22px rgba(245,166,35,.38);}
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center;margin:10px 0;}
+.vs-txt{font-family:'Jua',sans-serif;font-size:1rem;color:var(--muted);text-align:center;}
+.res-box{background:var(--surface);border-radius:13px;padding:14px;text-align:center;}
+.res-score{font-family:'Jua',sans-serif;font-size:2rem;}
+.res-score.mom{color:var(--mom);}.res-score.son{color:var(--son);}
+.res-lbl{font-size:.8rem;color:var(--muted);margin-top:3px;}
+.winner-banner{background:linear-gradient(135deg,rgba(245,166,35,.18),rgba(124,92,191,.18));border:2px solid var(--accent);border-radius:14px;padding:12px;text-align:center;margin:10px 0;animation:glow 1.5s ease-in-out infinite alternate;}
+@keyframes glow{from{box-shadow:0 0 8px rgba(245,166,35,.28);}to{box-shadow:0 0 22px rgba(245,166,35,.55);}}
+.winner-txt{font-family:'Jua',sans-serif;font-size:1.1rem;color:var(--accent);}
+.face-opt{background:var(--surface);border:2px solid rgba(255,255,255,.07);border-radius:11px;padding:9px;color:var(--text);font-family:'Nanum Gothic',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer;transition:all .18s;text-align:center;display:block;width:100%;margin:4px 0;}
+.face-opt:hover{border-color:var(--accent3);}
+.faces-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;}
+.face-card{background:var(--surface);border-radius:11px;padding:11px 6px;text-align:center;border:2px solid rgba(255,255,255,.06);}
+.face-emoji{font-size:1.7rem;display:block;}
+.face-name{font-size:.72rem;font-weight:700;margin-top:3px;color:var(--accent);}
+.ai-loading{text-align:center;padding:26px 16px;}
+.spinner{width:36px;height:36px;border:3px solid rgba(124,92,191,.2);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 11px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ai-txt{color:var(--muted);font-size:.82rem;line-height:1.7;}
+.quiz-qbox{background:var(--surface);border-radius:13px;padding:13px;margin-bottom:13px;font-size:.9rem;line-height:1.7;border-left:3px solid var(--accent2);}
+.quiz-sbadge{display:inline-block;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:6px;margin-bottom:7px;}
+.exp-box{background:var(--surface);border-radius:11px;padding:11px;margin-top:9px;font-size:.8rem;line-height:1.7;}
+
+/* ── FLOOR CLEAR ── */
+.clear-bg{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;}
+.clear-box{text-align:center;padding:32px 26px;background:var(--card);border-radius:26px;border:2px solid var(--accent);max-width:320px;width:90%;animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes bounceIn{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+.clear-ring{width:76px;height:76px;border-radius:50%;background:rgba(245,166,35,.14);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto 16px;animation:ringPop .6s .2s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes ringPop{from{transform:scale(0);}to{transform:scale(1);}}
+.clear-title{font-family:'Jua',sans-serif;font-size:1.5rem;color:var(--accent);margin-bottom:5px;}
+.clear-next{font-family:'Jua',sans-serif;font-size:.92rem;color:var(--accent3);margin-bottom:4px;}
+.clear-desc{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+.clear-btn{background:linear-gradient(135deg,var(--accent),#e8932a);border:none;border-radius:13px;padding:12px 24px;color:#000;font-family:'Jua',sans-serif;font-size:.95rem;cursor:pointer;width:100%;}
+.confetti{position:fixed;width:7px;height:7px;border-radius:2px;pointer-events:none;z-index:501;animation:confettiFall 1.3s ease-in forwards;}
+@keyframes confettiFall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+
+/* ── TOAST / XP POPUP ── */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:10px 17px;font-weight:700;font-size:.86rem;z-index:200;transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 7px 28px rgba(0,0,0,.5);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:var(--success);color:var(--success);}
+.toast.fail{border-color:var(--danger);color:var(--danger);}
+.toast.info{border-color:var(--accent);color:var(--accent);}
+.xp-popup{position:fixed;pointer-events:none;z-index:300;font-family:'Jua',sans-serif;font-size:1.3rem;color:var(--accent);text-shadow:0 0 10px rgba(245,166,35,.8);animation:floatUp 1.1s ease-out forwards;}
+@keyframes floatUp{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-65px);}}
+
+.empty-state{text-align:center;padding:26px;color:var(--muted);font-size:.82rem;}
+.empty-icon{font-size:2.1rem;margin-bottom:7px;}
+
+  /* ── AUTH UI ── */
+  .auth-overlay{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-box{background:var(--card);border-radius:28px;padding:30px 26px;width:100%;max-width:380px;border:1px solid rgba(255,255,255,.08);text-align:center;}
+  .auth-logo{font-family:'Jua',sans-serif;font-size:1.8rem;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;}
+  .auth-sub{color:var(--muted);font-size:.8rem;margin-bottom:24px;}
+  .auth-tabs{display:flex;background:var(--surface);border-radius:12px;padding:4px;gap:4px;margin-bottom:20px;}
+  .auth-tab{flex:1;background:transparent;border:none;border-radius:9px;padding:8px;color:var(--muted);font-family:'Jua',sans-serif;font-size:.82rem;cursor:pointer;transition:all .2s;}
+  .auth-tab.active{background:var(--accent2);color:#fff;}
+  .auth-input{background:var(--surface);border:2px solid rgba(255,255,255,.1);border-radius:12px;padding:11px 14px;color:var(--text);font-family:'Nanum Gothic',sans-serif;font-size:.92rem;width:100%;margin-bottom:10px;transition:border-color .2s;}
+  .auth-input:focus{outline:none;border-color:var(--accent);}
+  .auth-btn{background:linear-gradient(135deg,var(--accent),#e8932a);border:none;border-radius:12px;padding:12px 20px;color:#000;font-family:'Jua',sans-serif;font-size:.95rem;cursor:pointer;width:100%;transition:all .2s;margin-top:4px;}
+  .auth-btn:hover{transform:translateY(-1px);}
+  .auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:.75rem;}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+  .auth-google{background:var(--surface);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 20px;color:var(--text);font-family:'Jua',sans-serif;font-size:.88rem;cursor:pointer;width:100%;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .auth-google:hover{border-color:rgba(255,255,255,.25);}
+  .auth-err{color:var(--danger);font-size:.78rem;margin-top:8px;min-height:18px;}
+  .user-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:8px 14px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06);}
+  .user-email{font-size:.72rem;color:var(--muted);}
+  .logout-btn{background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px 10px;color:var(--muted);font-size:.68rem;cursor:pointer;font-family:'Nanum Gothic',sans-serif;}
+  .logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .sync-badge{font-size:.65rem;color:var(--success);margin-left:6px;}
+
+</style>
+</head>
+<body>
+
+
+<!-- AUTH -->
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">🏰 기억 던전</div>
+    <div class="auth-sub">로그인하면 모든 기기에서 기록이 동기화돼요</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">로그인</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">회원가입</button>
+    </div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="이메일"/>
+    <input class="auth-input" id="auth-pw" type="password" placeholder="비밀번호 (6자 이상)"/>
+    <button class="auth-btn" id="auth-submit-btn" onclick="authSubmit()">로그인</button>
+    <div class="auth-divider">또는</div>
+    <button class="auth-google" onclick="googleLogin()">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.6 2.5 30.1 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.1z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.1 0 11.2-2 14.9-5.4l-7.6-5.9c-2 1.4-4.6 2.2-7.3 2.2-6.3 0-11.6-4.2-13.6-10l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+      Google로 계속하기
+    </button>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div class="onboarding" id="onboarding">
+  <div class="ob-box">
+    <div class="ob-logo">🏰 기억 던전</div>
+    <div class="ob-sub">엄마 vs 아들 · 미션 · 교과 퀴즈 · 던전 탐험</div>
+    <div class="ob-label">아들 이름</div>
+    <input class="ob-input" id="inp-son" placeholder="예: 민준" maxlength="8"/>
+    <div class="ob-label">엄마 이름 (선택)</div>
+    <input class="ob-input" id="inp-mom" placeholder="예: 엄마" maxlength="8"/>
+    <div class="ob-label">몇 학년이에요?</div>
+    <div class="grade-grid">
+      <button class="grade-btn" onclick="selGrade(1,this)">1학년</button>
+      <button class="grade-btn" onclick="selGrade(2,this)">2학년</button>
+      <button class="grade-btn active" onclick="selGrade(3,this)">3학년</button>
+      <button class="grade-btn" onclick="selGrade(4,this)">4학년</button>
+      <button class="grade-btn" onclick="selGrade(5,this)">5학년</button>
+      <button class="grade-btn" onclick="selGrade(6,this)">6학년</button>
+    </div>
+    <button class="ob-start" onclick="startApp()">시작하기 🚀</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="main-app" style="display:none">
+  <div id="user-bar" class="user-bar" style="display:none">
+    <span class="user-email" id="user-email-txt">—</span>
+    <button class="logout-btn" onclick="logout()">로그아웃</button>
+  </div>
+  <div class="hdr">
+    <div class="logo">🏰 기억 던전</div>
+    <div class="grade-badge" id="grade-badge" onclick="openSettings()">4학년 ✏️</div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="players">
+    <div class="pc mom">
+      <div class="pc-name" id="mom-name">👑 엄마</div>
+      <div class="pc-lv" id="mom-lv">Lv.1 기억 견습생</div>
+      <div class="pc-score" id="mom-score">0점</div>
+      <div class="xpbar"><div class="xpfill" id="mom-xp" style="width:0%"></div></div>
+    </div>
+    <div class="pc son">
+      <div class="pc-name" id="son-name">⚔️ 아들</div>
+      <div class="pc-lv" id="son-lv">Lv.1 기억 견습생</div>
+      <div class="pc-score" id="son-score">0점</div>
+      <div class="xpbar"><div class="xpfill" id="son-xp" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- DUNGEON MAP — 항상 보임 -->
+  <div class="dmap-section">
+    <div class="dmap-header">
+      <div class="dmap-title">🗺️ 던전 탐험</div>
+      <div class="dmap-cur-room" id="dmap-cur-room">시작의 방</div>
+    </div>
+    <div class="dmap-canvas-wrap" id="dmap-wrap" onclick="toggleMap()">
+      <canvas id="dmap-canvas" width="480" height="160"></canvas>
+      <div class="dmap-expand-hint" id="dmap-hint">탭하면 확대 👆</div>
+      <div id="dmap-zoom-ind" style="display:none;position:absolute;top:6px;left:8px;font-size:.58rem;background:rgba(0,0,0,.7);border:1px solid rgba(245,166,35,.3);color:#f5a623;padding:2px 7px;border-radius:4px;font-family:'Jua',sans-serif;pointer-events:none;">줌 모드</div>
+    </div>
+    <div class="dmap-footer">
+      <div class="dmap-prog-bar"><div class="dmap-prog-fill" id="dmap-prog"></div></div>
+      <div class="dmap-prog-txt" id="dmap-prog-txt">0 / 90 XP</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('missions',this)">🎮 오늘의 미션</button>
+    <button class="nav-tab" onclick="switchTab('study',this)">📚 교과 퀴즈</button>
+  </div>
+
+  <!-- TAB: MISSIONS -->
+  <div class="tab-panel active" id="tab-missions">
+    <div class="sec">
+      <div class="sec-title">🔥 연속 완료 <span style="margin-left:auto;font-size:.7rem;color:var(--accent)" id="done-count">0/3</span></div>
+      <div class="streak-row" id="streak-row">
+        <div class="sd"></div><div class="sd"></div><div class="sd"></div>
+        <div class="sd"></div><div class="sd"></div><div class="sd"></div><div class="sd"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📋 기억력 미션</div>
+      <div class="mission-grid">
+        <button class="mb" onclick="startGame('memory')" id="mission-memory">
+          <span class="mb-icon">🛒</span><span class="mb-label">단기 기억</span><span class="mb-xp">+30 XP</span>
+        </button>
+        <button class="mb" onclick="startGame('numbers')" id="mission-numbers">
+          <span class="mb-icon">🔢</span><span class="mb-label">숫자 순서</span><span class="mb-xp">+30 XP</span>
+        </button>
+        <button class="mb" onclick="startGame('faces')" id="mission-faces">
+          <span class="mb-icon">🎭</span><span class="mb-label">얼굴 이름</span><span class="mb-xp">+30 XP</span>
+        </button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">🏆 전체 기록</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" style="color:var(--mom)" id="s-mom">0</div><div class="stat-lbl" id="s-mom-lbl">👑 엄마 총점</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--son)" id="s-son">0</div><div class="stat-lbl" id="s-son-lbl">⚔️ 아들 총점</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--accent)" id="s-missions">0</div><div class="stat-lbl">🎮 미션 완료</div></div>
+        <div class="stat-box"><div class="stat-val" style="color:var(--accent3)" id="s-quizzes">0</div><div class="stat-lbl">🧠 퀴즈 완료</div></div>
+      </div>
+      <button class="reset-btn" onclick="confirmReset()">🗑️ 기록 초기화</button>
+    </div>
+  </div>
+
+  <!-- TAB: STUDY -->
+  <div class="tab-panel" id="tab-study">
+    <div class="sec">
+      <div class="sec-title">🎓 학년 선택</div>
+      <div class="grade-row" id="grade-row">
+        <button class="gs-btn" onclick="setQuizGrade(1,this)">1학년</button>
+        <button class="gs-btn" onclick="setQuizGrade(2,this)">2학년</button>
+        <button class="gs-btn" onclick="setQuizGrade(3,this)">3학년</button>
+        <button class="gs-btn" onclick="setQuizGrade(4,this)">4학년</button>
+        <button class="gs-btn" onclick="setQuizGrade(5,this)">5학년</button>
+        <button class="gs-btn" onclick="setQuizGrade(6,this)">6학년</button>
+      </div>
+      <div class="unit-card">
+        <div class="unit-date" id="unit-date">—</div>
+        <div class="unit-title" id="unit-title">단원 로딩 중...</div>
+        <div class="unit-desc" id="unit-desc"></div>
+      </div>
+      <div class="subj-grid">
+        <button class="sq-btn" onclick="startSubjectQuiz('국어')">📖 국어<span class="sq-sub" id="sub-kr">—</span></button>
+        <button class="sq-btn" onclick="startSubjectQuiz('수학')">🔢 수학<span class="sq-sub" id="sub-ma">—</span></button>
+        <button class="sq-btn" onclick="startSubjectQuiz('사회')">🗺️ 사회<span class="sq-sub" id="sub-so">—</span></button>
+        <button class="sq-btn" onclick="startSubjectQuiz('과학')">🔬 과학<span class="sq-sub" id="sub-sc">—</span></button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">📊 퀴즈 기록 <span style="margin-left:auto;font-size:.7rem;color:var(--accent)" id="qh-count">0회</span></div>
+      <div id="qh-list"><div class="empty-state"><div class="empty-icon">🎯</div>과목을 골라 퀴즈를 시작해봐요!</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal"><div class="modal" id="modal-content"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+
+// ══════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'https://kojclhotpruaibwxgvqu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_vqUxSQHQ55U8PCIU7Ay51g__qSMSBrO';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+
+// ── AUTH UI ──────────────────────────────
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('auth-submit-btn').textContent = tab==='login' ? '로그인' : '회원가입';
+  document.getElementById('auth-err').textContent = '';
+  window._authMode = tab;
+}
+window._authMode = 'login';
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-pw').value;
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = '이메일과 비밀번호를 입력해주세요'; return; }
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent = '처리 중...'; btn.disabled = true;
+  try {
+    const { error } = window._authMode === 'login'
+      ? await sb.auth.signInWithPassword({ email, password: pw })
+      : await sb.auth.signUp({ email, password: pw });
+    if (error) { err.textContent = translateAuthError(error.message); }
+    else if (window._authMode === 'signup') { err.style.color='var(--success)'; err.textContent = '가입 완료! 이메일을 확인해주세요 📧'; }
+  } catch(e) { err.textContent = '오류가 발생했어요. 다시 시도해주세요.'; }
+  btn.textContent = window._authMode==='login'?'로그인':'회원가입'; btn.disabled = false;
+}
+
+async function googleLogin() {
+  await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  showAuthOverlay();
+}
+
+function translateAuthError(msg) {
+  if (msg.includes('Invalid login')) return '이메일 또는 비밀번호가 틀렸어요';
+  if (msg.includes('Email not confirmed')) return '이메일 인증이 필요해요';
+  if (msg.includes('User already registered')) return '이미 가입된 이메일이에요';
+  if (msg.includes('Password should be')) return '비밀번호는 6자 이상이어야 해요';
+  return msg;
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('onboarding').style.display = 'none';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('user-bar').style.display = 'none';
+}
+
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').style.display = 'none';
+}
+
+// ── DB SYNC ──────────────────────────────
+async function loadFromDB() {
+  if (!currentUser) return false;
+  try {
+    const { data, error } = await sb
+      .from('game_records')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single();
+    if (error || !data) return false;
+    S = {
+      ...S,
+      mom: { score: data.mom_score, xp: data.mom_xp },
+      son: { score: data.son_score, xp: data.son_xp },
+      floorXP: data.floor_xp,
+      totalMissions: data.total_missions,
+      totalQuizzes: data.total_quizzes,
+      completedMissions: data.completed_missions || [],
+      streak: data.streak,
+      quizHistory: data.quiz_history || [],
+      momName: data.mom_name || '엄마',
+      sonName: data.son_name || '아들',
+      grade: data.grade || 4,
+      quizGrade: data.quiz_grade || 4,
+    };
+    return true;
+  } catch(e) { return false; }
+}
+
+async function saveToDB() {
+  if (!currentUser) { save(); return; }
+  try {
+    await sb.from('game_records').upsert({
+      user_id: currentUser.id,
+      mom_score: S.mom.score, mom_xp: S.mom.xp,
+      son_score: S.son.score, son_xp: S.son.xp,
+      floor_xp: S.floorXP,
+      total_missions: S.totalMissions,
+      total_quizzes: S.totalQuizzes,
+      completed_missions: S.completedMissions,
+      streak: S.streak,
+      quiz_history: S.quizHistory.slice(0, 50),
+      mom_name: S.momName, son_name: S.sonName,
+      grade: S.grade, quiz_grade: S.quizGrade,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    save(); // also save to localStorage as backup
+  } catch(e) { save(); }
+}
+
+// ── AUTH STATE LISTENER ───────────────────
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    hideAuthOverlay();
+    document.getElementById('user-bar').style.display = 'flex';
+    document.getElementById('user-email-txt').textContent = currentUser.email;
+    // load from DB first, fallback to localStorage
+    const loaded = await loadFromDB();
+    if (!loaded) load();
+    // check if onboarding needed
+    if (!S.sonName || S.sonName === '아들') {
+      document.getElementById('onboarding').style.display = 'flex';
+    } else {
+      launch();
+    }
+  } else {
+    showAuthOverlay();
+  }
+});
+
+
+// ══════════════════════════════════════════
+// CURRICULUM
+// ══════════════════════════════════════════
+const curriculum={
+  1:{
+    국어:[{m:[3,4],u:'1단원 · 바른 자세로 읽고 쓰기',d:'연필 잡기, 바른 자세, 자음과 모음'},{m:[4,5],u:'2단원 · 재미있는 낱말 놀이',d:'낱말의 뜻, 소리 익히기'},{m:[5,6],u:'3단원 · 다 함께 아야어여',d:'모음 익히기, 낱말 읽고 쓰기'},{m:[6,7],u:'4단원 · 글자를 만들어요',d:'받침 있는 글자 익히기'},{m:[8,9],u:'5단원 · 다정하게 인사해요',d:'인사말, 상황에 맞는 말하기'},{m:[9,10],u:'6단원 · 받침이 있는 글자',d:'받침 글자 읽기와 쓰기'},{m:[10,11],u:'7단원 · 생각을 나타내요',d:'문장 쓰기, 생각 표현'},{m:[11,12],u:'8단원 · 띄어 읽어요',d:'문장 부호, 알맞게 띄어 읽기'}],
+    수학:[{m:[3,4],u:'1단원 · 9까지의 수',d:'1~9 수 읽고 쓰기, 수의 순서'},{m:[4,5],u:'2단원 · 여러 가지 모양',d:'동그라미, 세모, 네모 모양 알기'},{m:[5,6],u:'3단원 · 덧셈과 뺄셈',d:'합이 9까지인 덧셈과 뺄셈'},{m:[6,7],u:'4단원 · 비교하기',d:'길이·무게·넓이·들이 비교'},{m:[8,9],u:'5단원 · 50까지의 수',d:'10~50 수 알기, 십 몇 읽기'},{m:[9,10],u:'6단원 · 덧셈과 뺄셈 (2)',d:'받아올림 없는 두 자리 덧셈'},{m:[10,11],u:'7단원 · 시계 보기',d:'몇 시, 몇 시 30분 읽기'},{m:[11,12],u:'8단원 · 규칙 찾기',d:'반복되는 규칙 찾고 만들기'}],
+    사회:[{m:[3,12],u:'통합교과 · 봄·여름·가을·겨울',d:'계절 변화와 생활, 우리 주변 탐구'}],
+    과학:[{m:[3,12],u:'통합교과 · 슬기로운 생활',d:'동식물 관찰, 자연과 환경 탐구'}]
+  },
+  2:{
+    국어:[{m:[3,4],u:'1단원 · 시를 즐겨요',d:'시 읽기, 느낌 표현하기'},{m:[4,5],u:'2단원 · 자신 있게 말해요',d:'발표하기, 경험 말하기'},{m:[5,6],u:'3단원 · 마음을 나누어요',d:'인물의 마음, 이야기 읽기'},{m:[6,7],u:'4단원 · 말놀이를 해요',d:'흉내 내는 말, 낱말 놀이'},{m:[8,9],u:'5단원 · 간추려요',d:'중심 내용 찾기, 글 요약'},{m:[9,10],u:'6단원 · 차례대로 말해요',d:'일의 순서, 차례 말하기'},{m:[10,11],u:'7단원 · 마음을 담아 글을 써요',d:'편지 쓰기, 마음 전달'},{m:[11,12],u:'8단원 · 바르게 말해요',d:'높임말, 바른 언어 표현'}],
+    수학:[{m:[3,4],u:'1단원 · 세 자리 수',d:'100~999 읽기, 자릿값'},{m:[4,5],u:'2단원 · 여러 가지 도형',d:'삼각형·사각형·원 알기'},{m:[5,6],u:'3단원 · 덧셈과 뺄셈',d:'두 자리 수 덧셈·뺄셈'},{m:[6,7],u:'4단원 · 길이 재기',d:'cm 단위, 자로 재기'},{m:[8,9],u:'5단원 · 분류하기',d:'기준에 따라 분류하기'},{m:[9,10],u:'6단원 · 곱셈',d:'2~5단 곱셈구구'},{m:[10,11],u:'7단원 · 시각과 시간',d:'몇 시 몇 분, 하루 시간'},{m:[11,12],u:'8단원 · 표와 그래프',d:'자료 정리, 그래프 읽기'}],
+    사회:[{m:[3,12],u:'통합교과 · 우리 동네·학교·가족',d:'공동체, 이웃과 함께하는 생활'}],
+    과학:[{m:[3,12],u:'통합교과 · 자연 탐구',d:'식물 기르기, 날씨 관찰'}]
+  },
+  3:{
+    국어:[{m:[3,4],u:'1단원 · 재미가 톡톡톡',d:'이야기와 시의 재미, 흉내 내는 말'},{m:[4,5],u:'2단원 · 문단의 짜임',d:'중심 문장과 뒷받침 문장'},{m:[5,6],u:'3단원 · 알맞은 높임 표현',d:'높임말 사용, 상황별 표현'},{m:[6,7],u:'4단원 · 내 마음을 편지에 담아',d:'편지 형식, 마음 표현'},{m:[8,9],u:'5단원 · 중요한 내용을 적어요',d:'메모하기, 내용 정리'},{m:[9,10],u:'6단원 · 마음을 담아 글을 써요',d:'일기 쓰기, 독서 감상문'},{m:[10,11],u:'7단원 · 글을 읽고 소개해요',d:'책 소개하기, 요약 표현'},{m:[11,12],u:'8단원 · 의견이 있어요',d:'의견과 이유, 주장하는 글'}],
+    수학:[{m:[3,4],u:'1단원 · 덧셈과 뺄셈',d:'세 자리 수 덧셈·뺄셈'},{m:[4,5],u:'2단원 · 평면도형',d:'선분·직선·각·직각·직사각형'},{m:[5,6],u:'3단원 · 나눗셈',d:'나눗셈의 의미, 나눗셈식'},{m:[6,7],u:'4단원 · 곱셈',d:'두 자리 수 × 한 자리 수'},{m:[8,9],u:'5단원 · 들이와 무게',d:'L·mL·kg·g 단위'},{m:[9,10],u:'6단원 · 분수와 소수',d:'분수의 뜻, 소수 첫째 자리'},{m:[10,11],u:'7단원 · 시간과 길이',d:'1분=60초, mm·km 단위'},{m:[11,12],u:'8단원 · 자료 정리',d:'그림그래프 읽고 그리기'}],
+    사회:[{m:[3,5],u:'1단원 · 우리 고장의 모습',d:'고장의 지형, 지도 보기'},{m:[5,7],u:'2단원 · 우리가 알아보는 고장 이야기',d:'고장의 역사, 문화유산'},{m:[8,10],u:'3단원 · 교통과 통신 수단의 변화',d:'교통·통신 발달 과정'},{m:[10,12],u:'4단원 · 다양한 삶의 모습들',d:'옛날과 오늘날 생활 비교'}],
+    과학:[{m:[3,5],u:'1단원 · 과학자처럼 탐구해요',d:'관찰·예상·실험 방법'},{m:[5,6],u:'2단원 · 물질의 성질',d:'물질의 특성 비교'},{m:[6,8],u:'3단원 · 동물의 한살이',d:'곤충과 동물의 성장 과정'},{m:[8,10],u:'4단원 · 자석의 이용',d:'자석 성질, 극과 인력'},{m:[10,12],u:'5단원 · 지구의 모습',d:'육지와 바다, 지구와 달'}]
+  },
+  4:{
+    국어:[{m:[3,4],u:'1단원 · 이야기를 들어요',d:'듣기·말하기, 이야기의 흐름 파악'},{m:[4,5],u:'2단원 · 내 마음을 편지에 담아',d:'편지 형식, 마음 표현하기'},{m:[5,6],u:'3단원 · 느낌을 살려 읽어요',d:'시와 이야기 낭독, 감정 표현'},{m:[6,7],u:'4단원 · 사전은 내 친구',d:'낱말의 뜻, 국어사전 활용법'},{m:[8,9],u:'5단원 · 내가 만든 이야기',d:'이야기 구조, 창작 표현'},{m:[9,10],u:'6단원 · 본받고 싶은 인물',d:'인물의 특성, 전기문 읽기'},{m:[10,11],u:'7단원 · 독서 감상문 쓰기',d:'책 내용 정리, 감상 표현'},{m:[11,12],u:'8단원 · 우리말 바로 쓰기',d:'맞춤법, 표준어 사용'}],
+    수학:[{m:[3,4],u:'1단원 · 큰 수',d:'만·억·조 단위 읽고 쓰기'},{m:[4,5],u:'2단원 · 각도',d:'각의 크기, 각도기 사용법'},{m:[5,6],u:'3단원 · 곱셈과 나눗셈',d:'세 자리 수 곱셈·나눗셈'},{m:[6,7],u:'4단원 · 평면도형의 이동',d:'밀기·뒤집기·돌리기'},{m:[8,9],u:'5단원 · 막대그래프',d:'자료 정리, 막대그래프 읽기'},{m:[9,10],u:'6단원 · 규칙 찾기',d:'수·도형의 규칙, 배열 패턴'},{m:[10,11],u:'7단원 · 분수',d:'분수의 개념, 분수 비교'},{m:[11,12],u:'8단원 · 소수',d:'소수의 뜻, 소수 크기 비교'}],
+    사회:[{m:[3,5],u:'1단원 · 지역의 위치와 특성',d:'지도 읽기, 우리 지역 알기'},{m:[5,7],u:'2단원 · 우리 지역의 역사',d:'지역의 역사적 장소와 인물'},{m:[8,10],u:'3단원 · 촌락과 도시의 생활',d:'촌락·도시 특징 비교'},{m:[10,12],u:'4단원 · 필요한 것의 생산과 교환',d:'생산·소비·교환의 의미'}],
+    과학:[{m:[3,5],u:'1단원 · 지구와 달의 운동',d:'지구 자전·공전, 달의 위상'},{m:[5,6],u:'2단원 · 식물의 구조와 기능',d:'뿌리·줄기·잎·꽃의 역할'},{m:[6,8],u:'3단원 · 혼합물의 분리',d:'물질 분리 방법, 거름·증발'},{m:[8,10],u:'4단원 · 물체의 무게',d:'무게와 질량, 저울 사용법'},{m:[10,12],u:'5단원 · 산과 염기',d:'산성·염기성 구별, 지시약'}]
+  },
+  5:{
+    국어:[{m:[3,4],u:'1단원 · 대화와 공감',d:'경청, 공감하며 듣고 말하기'},{m:[4,5],u:'2단원 · 작품을 감상해요',d:'문학 작품의 구조와 감상'},{m:[5,6],u:'3단원 · 글을 요약해요',d:'핵심 내용 파악과 요약하기'},{m:[6,7],u:'4단원 · 주장과 근거',d:'주장하는 글, 근거의 타당성'},{m:[8,9],u:'5단원 · 글쓴이의 주장',d:'논설문 읽기, 의견 평가'},{m:[9,10],u:'6단원 · 토의해요',d:'토의 절차, 의견 조정하기'},{m:[10,11],u:'7단원 · 중요한 내용을 요약해요',d:'설명문 요약, 내용 정리'},{m:[11,12],u:'8단원 · 우리말 지킴이',d:'언어 예절, 바른 표현 사용'}],
+    수학:[{m:[3,4],u:'1단원 · 자연수의 혼합 계산',d:'덧·뺄·곱·나눗셈 혼합 계산'},{m:[4,5],u:'2단원 · 약수와 배수',d:'약수·배수·공약수·공배수'},{m:[5,6],u:'3단원 · 규칙과 대응',d:'두 양 사이의 관계, 대응 규칙'},{m:[6,7],u:'4단원 · 약분과 통분',d:'분수의 약분, 통분, 크기 비교'},{m:[8,9],u:'5단원 · 분수의 덧셈과 뺄셈',d:'이분모 분수 덧셈·뺄셈'},{m:[9,10],u:'6단원 · 다각형의 둘레와 넓이',d:'직사각형·평행사변형 넓이'},{m:[10,11],u:'7단원 · 수의 범위와 어림하기',d:'이상·이하·올림·버림·반올림'},{m:[11,12],u:'8단원 · 분수의 곱셈',d:'분수×자연수, 분수×분수'}],
+    사회:[{m:[3,5],u:'1단원 · 국토와 우리 생활',d:'우리나라 위치, 지형과 기후'},{m:[5,7],u:'2단원 · 인권 존중과 정의로운 사회',d:'인권의 의미, 차별과 평등'},{m:[8,10],u:'3단원 · 우리나라의 정치 발전',d:'민주주의, 선거 제도'},{m:[10,12],u:'4단원 · 우리나라의 경제 발전',d:'산업화, 무역과 경제 성장'}],
+    과학:[{m:[3,5],u:'1단원 · 온도와 열',d:'온도 측정, 열의 이동'},{m:[5,6],u:'2단원 · 태양계와 별',d:'태양계 행성, 별자리'},{m:[6,8],u:'3단원 · 용해와 용액',d:'용질·용매·용액의 구별'},{m:[8,10],u:'4단원 · 다양한 생물과 우리 생활',d:'균류·세균·원생생물'},{m:[10,12],u:'5단원 · 산과 염기',d:'지시약, 산과 염기의 성질'}]
+  },
+  6:{
+    국어:[{m:[3,4],u:'1단원 · 비유하는 표현',d:'비유와 상징, 시적 표현'},{m:[4,5],u:'2단원 · 이야기를 간추려요',d:'서사 구조, 내용 요약'},{m:[5,6],u:'3단원 · 짜임새 있게 구성해요',d:'발표 구성, 내용 조직'},{m:[6,7],u:'4단원 · 주장과 근거를 판단해요',d:'논거의 타당성, 비판적 읽기'},{m:[8,9],u:'5단원 · 속담을 활용해요',d:'속담의 뜻과 유래, 활용'},{m:[9,10],u:'6단원 · 정보와 표현 판단하기',d:'광고·미디어 비판적 이해'},{m:[10,11],u:'7단원 · 우리말을 가꾸어요',d:'언어문화, 국어 사랑'},{m:[11,12],u:'8단원 · 작품으로 경험하는 세계',d:'다양한 문학 감상'}],
+    수학:[{m:[3,4],u:'1단원 · 분수의 나눗셈',d:'분수÷자연수, 분수÷분수'},{m:[4,5],u:'2단원 · 각기둥과 각뿔',d:'입체도형의 구성 요소'},{m:[5,6],u:'3단원 · 소수의 나눗셈',d:'소수÷자연수, 소수÷소수'},{m:[6,7],u:'4단원 · 비와 비율',d:'비의 뜻, 백분율, 비율 계산'},{m:[8,9],u:'5단원 · 여러 가지 그래프',d:'띠그래프·원그래프 읽기'},{m:[9,10],u:'6단원 · 직육면체의 부피와 겉넓이',d:'부피 단위, 겉넓이 계산'},{m:[10,11],u:'7단원 · 비례식과 비례배분',d:'비례식의 성질, 비례배분'},{m:[11,12],u:'8단원 · 원의 넓이',d:'원주율, 원의 넓이 공식'}],
+    사회:[{m:[3,5],u:'1단원 · 우리나라의 정치 제도',d:'헌법, 입법·사법·행정부'},{m:[5,7],u:'2단원 · 우리나라의 경제 제도',d:'시장 경제, 기업과 가계'},{m:[8,10],u:'3단원 · 세계 여러 나라',d:'대륙·나라별 특징, 문화 차이'},{m:[10,12],u:'4단원 · 세계 평화와 발전',d:'국제기구, 지구촌 문제'}],
+    과학:[{m:[3,5],u:'1단원 · 빛과 렌즈',d:'빛의 굴절, 볼록·오목 렌즈'},{m:[5,6],u:'2단원 · 식물의 구조와 기능',d:'광합성, 증산 작용'},{m:[6,8],u:'3단원 · 우리 몸의 구조와 기능',d:'소화·순환·호흡·배설 기관'},{m:[8,10],u:'4단원 · 전기의 이용',d:'전기 회로, 전자석 원리'},{m:[10,12],u:'5단원 · 에너지와 생활',d:'에너지 종류와 전환'}]
+  }
+};
+
+const SUBJ_COLORS={국어:'#f5a623',수학:'#4ecdc4',사회:'#7c5cbf',과학:'#6bcb77'};
+const LEVELS=[{min:0,n:'기억 견습생'},{min:100,n:'기억 탐험가'},{min:250,n:'기억 마법사'},{min:500,n:'기억 전사'},{min:900,n:'기억 영웅'},{min:1500,n:'기억 전설'}];
+const MEM_ITEMS=[['사과','우유','두부','계란','라면','참치캔','치약','양파','버터','요거트'],['공책','지우개','볼펜','가위','풀','자','형광펜','스카치테이프','클립','포스트잇'],['버스','지하철','자전거','오토바이','택시','트럭','기차','비행기','배','킥보드']];
+const NUM_SEQS=[[3,7,1,9,4],[8,2,5,1,6],[4,9,3,7,2],[1,5,8,3,6,9],[7,2,4,8,1,5]];
+const FACE_DATA=[{emoji:'👦',name:'민준',trait:'축구를 좋아해요'},{emoji:'👧',name:'지아',trait:'그림을 잘 그려요'},{emoji:'👨',name:'현우',trait:'요리를 잘해요'},{emoji:'👩',name:'소연',trait:'책 읽기를 좋아해요'},{emoji:'🧓',name:'철수',trait:'낚시를 즐겨요'},{emoji:'👴',name:'영호',trait:'바둑을 둬요'}];
+
+// ── DUNGEON MAP DATA ──────────────────────
+const DROOMS=[
+  {id:1,xp:0,  x:3, y:4, w:8,h:7, name:'시작의 방'},
+  {id:2,xp:90, x:15,y:2, w:9,h:6, name:'퍼즐의 방'},
+  {id:3,xp:180,x:15,y:10,w:9,h:7, name:'보물의 방'},
+  {id:4,xp:270,x:27,y:5, w:8,h:7, name:'얼음의 방'},
+  {id:5,xp:360,x:1, y:1, w:7,h:5, name:'보스의 방'},
+];
+const DCORS=[
+  {x:11,y:7, w:4,h:1,xp:90},{x:11,y:6, w:1,h:3,xp:90},{x:12,y:6, w:3,h:1,xp:90},{x:14,y:4, w:1,h:3,xp:90},
+  {x:11,y:10,w:1,h:2,xp:180},{x:12,y:11,w:3,h:1,xp:180},{x:14,y:10,w:1,h:3,xp:180},
+  {x:24,y:7, w:3,h:1,xp:270},{x:24,y:13,w:3,h:1,xp:270},
+  {x:7, y:3, w:1,h:4,xp:360},{x:1, y:5, w:8,h:1,xp:360},
+];
+const DROOM_ICONS=['','⚔','🧩','💎','❄','👑'];
+
+// ── STATE ────────────────────────────────
+const DEF={mom:{score:0,xp:0},son:{score:0,xp:0},completedMissions:[],streak:0,floorXP:0,quizHistory:[],totalMissions:0,totalQuizzes:0,grade:4,quizGrade:4,momName:'엄마',sonName:'아들'};
+let S={...DEF,mom:{...DEF.mom},son:{...DEF.son}};
+let curTurn='mom',turnScores={mom:0,son:0},curGame=null;
+let gTimer=null,timeLeft=0;
+let memItems=[],numSeq=[],facesShown=[];
+let obGrade=3;
+
+// canvas state
+const DCANVAS=document.getElementById('dmap-canvas');
+const DCTX=DCANVAS.getContext('2d');
+const CW=480,CH=160,T=10;
+let torchT=0,hx=0,hy=0,htx=0,hty=0,rafId=null;
+let zoomed=false;
+let camX=0,camY=0,camScale=1,camTX=0,camTY=0,camTS=1;
+function lerp(a,b,t){return a+(b-a)*t;}
+function roomCenterW(r){return{x:(r.x+r.w/2)*T,y:(r.y+r.h/2)*T};}
+function getFullView(){
+  const mW=36*T,mH=18*T;
+  const sx=CW/mW,sy=CH/mH;
+  const sc=Math.min(sx,sy)*0.92;
+  return{cx:mW/2,cy:mH/2,scale:sc};
+}
+function getRoomView(r){
+  const sc=Math.min(CW/(r.w*T*2.2),CH/(r.h*T*2.2),3.5);
+  const c=roomCenterW(r);
+  return{cx:c.x,cy:c.y,scale:sc};
+}
+function setCamera(v,instant){
+  camTX=v.cx;camTY=v.cy;camTS=v.scale;
+  if(instant){camX=camTX;camY=camTY;camScale=camTS;}
+}
+
+// ── STORAGE ──────────────────────────────
+function save(){try{localStorage.setItem('kd_v5',JSON.stringify({...S,completedMissions:[...S.completedMissions]}));}catch(e){}}
+function load(){try{const r=localStorage.getItem('kd_v5');if(!r)return false;const d=JSON.parse(r);S={...DEF,...d,mom:{...DEF.mom,...d.mom},son:{...DEF.son,...d.son},completedMissions:d.completedMissions||[]};return true;}catch(e){return false;}}
+
+// ── ONBOARDING ───────────────────────────
+function selGrade(g,btn){obGrade=g;document.querySelectorAll('.grade-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function startApp(){
+  S.sonName=document.getElementById('inp-son').value.trim()||'아들';
+  S.momName=document.getElementById('inp-mom').value.trim()||'엄마';
+  S.grade=obGrade;S.quizGrade=obGrade;
+  saveToDB();launch();
+}
+function launch(){
+  document.getElementById('onboarding').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  applyNames();setQuizGradeUI(S.quizGrade);initUnits(S.quizGrade);
+  const sc=roomCenter(DROOMS[0]);hx=sc.x;hy=sc.y-6;htx=hx;hty=hy;
+  updateUI();startMapLoop();
+}
+function applyNames(){
+  document.getElementById('mom-name').innerHTML=`👑 ${S.momName}`;
+  document.getElementById('son-name').innerHTML=`⚔️ ${S.sonName}`;
+  document.getElementById('s-mom-lbl').textContent=`👑 ${S.momName} 총점`;
+  document.getElementById('s-son-lbl').textContent=`⚔️ ${S.sonName} 총점`;
+  document.getElementById('grade-badge').textContent=`${S.grade}학년 ✏️`;
+}
+
+// ── SETTINGS ─────────────────────────────
+function openSettings(){
+  openModal(`<div class="modal-hdr"><div class="modal-title">설정 변경</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="margin-bottom:13px">
+      <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin-bottom:7px">아들 이름</div>
+      <input class="ans-input" id="edit-son" value="${S.sonName}" maxlength="8"/>
+      <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin:9px 0 7px">엄마 이름</div>
+      <input class="ans-input" id="edit-mom" value="${S.momName}" maxlength="8"/>
+      <div style="font-family:'Jua',sans-serif;font-size:.85rem;color:var(--muted);margin:9px 0 7px">학년</div>
+      <div class="grade-grid">${[1,2,3,4,5,6].map(g=>`<button class="grade-btn ${g===S.grade?'active':''}" onclick="document.querySelectorAll('.grade-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window._eg=${g}">${g}학년</button>`).join('')}</div>
+    </div>
+    <button class="btn-primary" onclick="saveSettings()">저장</button>`);
+  window._eg=S.grade;
+}
+function saveSettings(){
+  S.sonName=document.getElementById('edit-son').value.trim()||S.sonName;
+  S.momName=document.getElementById('edit-mom').value.trim()||S.momName;
+  S.grade=window._eg||S.grade;S.quizGrade=S.grade;
+  applyNames();setQuizGradeUI(S.grade);initUnits(S.grade);save();closeModal();showToast('설정 저장됨 ✅','success');
+}
+
+// ── TABS ─────────────────────────────────
+function switchTab(tab,btn){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');btn.classList.add('active');}
+
+// ── CURRICULUM ───────────────────────────
+function getTodayUnit(subj,grade){const m=new Date().getMonth()+1;const g=curriculum[grade];if(!g||!g[subj])return{u:'단원 없음',d:''};for(const u of g[subj]){if(u.m.includes(m))return u;}return g[subj][g[subj].length-1];}
+function initUnits(grade){
+  const now=new Date();
+  document.getElementById('unit-date').textContent=`📅 ${now.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long'})} · ${grade}학년`;
+  const ku=getTodayUnit('국어',grade),mu=getTodayUnit('수학',grade);
+  document.getElementById('unit-title').textContent='이번 달 주요 단원';
+  document.getElementById('unit-desc').textContent=`국어 ${ku.u} · 수학 ${mu.u}`;
+  document.getElementById('sub-kr').textContent=ku.u;
+  document.getElementById('sub-ma').textContent=getTodayUnit('수학',grade).u;
+  document.getElementById('sub-so').textContent=getTodayUnit('사회',grade).u;
+  document.getElementById('sub-sc').textContent=getTodayUnit('과학',grade).u;
+}
+function setQuizGrade(g,btn){S.quizGrade=g;setQuizGradeUI(g);initUnits(g);save();}
+function setQuizGradeUI(g){document.querySelectorAll('.gs-btn').forEach((b,i)=>b.classList.toggle('active',i+1===g));}
+
+// ── UTILS ────────────────────────────────
+function getLvName(xp){for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].min)return LEVELS[i].n;}return LEVELS[0].n;}
+function getLvNum(xp){let lv=1;for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].min){lv=i+1;break;}}return lv;}
+function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),2500);}
+function showXPPop(xp){const el=document.createElement('div');el.className='xp-popup';el.textContent=`+${xp} XP`;el.style.left=(window.innerWidth/2-28)+'px';el.style.top='160px';document.body.appendChild(el);setTimeout(()=>el.remove(),1100);}
+
+function addXP(player,amount){
+  const prevFloor=Math.min(Math.floor(S.floorXP/90),DROOMS.length-1);
+  S[player].xp+=amount;S[player].score+=amount;S.floorXP+=Math.floor(amount/2);
+  showXPPop(amount);
+  const newFloor=Math.min(Math.floor(S.floorXP/90),DROOMS.length-1);
+  if(newFloor>prevFloor)setTimeout(()=>showFloorClear(newFloor),400);
+}
+
+function updateUI(){
+  ['mom','son'].forEach(p=>{
+    const s=S[p];
+    document.getElementById(`${p}-score`).textContent=s.score+'점';
+    document.getElementById(`${p}-lv`).textContent=`Lv.${getLvNum(s.xp)} ${getLvName(s.xp)}`;
+    const lv=getLvNum(s.xp),lvMin=LEVELS[lv-1]?.min||0,lvMax=LEVELS[lv]?.min||lvMin+200;
+    document.getElementById(`${p}-xp`).style.width=Math.min(100,((s.xp-lvMin)/(lvMax-lvMin))*100)+'%';
+  });
+  document.getElementById('done-count').textContent=`${S.completedMissions.length}/3`;
+  document.querySelectorAll('.streak-row .sd').forEach((d,i)=>d.classList.toggle('on',i<S.streak));
+  document.getElementById('s-mom').textContent=S.mom.score;
+  document.getElementById('s-son').textContent=S.son.score;
+  document.getElementById('s-missions').textContent=S.totalMissions;
+  document.getElementById('s-quizzes').textContent=S.totalQuizzes;
+
+  // dungeon map footer
+  const fi=Math.min(Math.floor(S.floorXP/90),DROOMS.length-1);
+  const fs=fi*90,rem=S.floorXP-fs;
+  document.getElementById('dmap-prog').style.width=Math.min(100,(rem/90)*100)+'%';
+  document.getElementById('dmap-prog-txt').textContent=`${rem} / 90 XP`;
+  let curRoom=DROOMS[0];DROOMS.forEach(r=>{if(S.floorXP>=r.xp)curRoom=r;});
+  document.getElementById('dmap-cur-room').textContent=curRoom.name;
+
+  renderQuizHistory();saveToDB();
+}
+
+// ── DUNGEON MAP CANVAS ────────────────────
+function roomCenter(r){return{x:(r.x+r.w/2)*T,y:(r.y+r.h/2)*T};}
+
+function drawDungeon(){
+  camX=lerp(camX,camTX,.1);camY=lerp(camY,camTY,.1);camScale=lerp(camScale,camTS,.1);
+  torchT+=0.055;
+  DCTX.clearRect(0,0,CW,CH);
+  DCTX.save();
+  DCTX.translate(CW/2-camX*camScale,CH/2-camY*camScale);
+  DCTX.scale(camScale,camScale);
+  DCTX.fillStyle='#080604';DCTX.fillRect(-20,-20,CW/camScale+40,CH/camScale+40);
+  DCORS.forEach(c=>{
+    DCTX.fillStyle=S.floorXP>=c.xp?'#2a2010':'#0d0a06';
+    DCTX.fillRect(c.x*T,c.y*T,c.w*T,c.h*T);
+    if(S.floorXP>=c.xp){DCTX.fillStyle='rgba(0,0,0,.25)';DCTX.fillRect(c.x*T,c.y*T,c.w*T,1);DCTX.fillRect(c.x*T,c.y*T,1,c.h*T);}
+  });
+  let curRI=0;DROOMS.forEach((r,i)=>{if(S.floorXP>=r.xp)curRI=i;});
+  DROOMS.forEach((r,ri)=>{
+    const lit=S.floorXP>=r.xp,rx=r.x*T,ry=r.y*T,rw=r.w*T,rh=r.h*T;
+    const flicker=Math.sin(torchT*2.1+r.id)*0.05,isCur=ri===curRI;
+    if(lit){
+      for(let tx=r.x;tx<r.x+r.w;tx++)for(let ty=r.y;ty<r.y+r.h;ty++){
+        DCTX.fillStyle=(tx+ty)%2===0?'#3a2c18':'#2a1e0e';DCTX.fillRect(tx*T,ty*T,T,T);
+        DCTX.fillStyle='rgba(0,0,0,.22)';DCTX.fillRect(tx*T,ty*T,T,1);DCTX.fillRect(tx*T,ty*T,1,T);
+      }
+      DCTX.fillStyle='#5a4428';DCTX.fillRect(rx,ry,rw,2);DCTX.fillRect(rx,ry+rh-2,rw,2);DCTX.fillRect(rx,ry,2,rh);DCTX.fillRect(rx+rw-2,ry,2,rh);
+      DCTX.fillStyle='#6a5438';DCTX.fillRect(rx,ry,T,T);DCTX.fillRect(rx+rw-T,ry,T,T);DCTX.fillRect(rx,ry+rh-T,T,T);DCTX.fillRect(rx+rw-T,ry+rh-T,T,T);
+      [[r.x,r.y],[r.x+r.w-1,r.y],[r.x,r.y+r.h-1],[r.x+r.w-1,r.y+r.h-1]].forEach(([tx,ty])=>{
+        const f=0.09+flicker;
+        const g=DCTX.createRadialGradient(tx*T+5,ty*T+5,0,tx*T+5,ty*T+5,T*2.2);
+        g.addColorStop(0,`rgba(245,166,35,${f+0.07})`);g.addColorStop(1,'rgba(245,166,35,0)');
+        DCTX.fillStyle=g;DCTX.fillRect((tx-1)*T,(ty-1)*T,T*3,T*3);
+        DCTX.fillStyle='#f5a623';DCTX.fillRect(tx*T+3,ty*T+3,T-6,T-5);
+        DCTX.fillStyle='#ffdd88';DCTX.fillRect(tx*T+4,ty*T+2,T-8,3);
+      });
+      DCTX.font=`${T*1.1}px monospace`;DCTX.textAlign='center';DCTX.textBaseline='middle';
+      DCTX.globalAlpha=isCur&&zoomed?0.8:0.38;DCTX.fillStyle='#fff';
+      DCTX.fillText(DROOM_ICONS[r.id],rx+rw/2,ry+rh/2);DCTX.globalAlpha=1;
+      if(isCur&&zoomed){
+        DCTX.strokeStyle='rgba(245,166,35,.18)';DCTX.lineWidth=1;DCTX.setLineDash([2,3]);
+        DCTX.beginPath();DCTX.arc(rx+rw/2,ry+rh/2,Math.min(rw,rh)*.28,0,Math.PI*2);DCTX.stroke();DCTX.setLineDash([]);
+        DCTX.fillStyle='rgba(245,166,35,.03)';DCTX.fillRect(rx+2,ry+2,rw-4,rh-4);
+        const cx=rx+rw/2,cy=ry+rh/2;
+        if(r.id===1){DCTX.fillStyle='#ccc';DCTX.fillRect(cx-1,cy-12,2,16);DCTX.fillStyle='#999';DCTX.fillRect(cx-5,cy-8,10,2);DCTX.fillStyle='#f5d020';DCTX.fillRect(cx-1,cy-14,2,3);}
+        if(r.id===2){DCTX.fillStyle='#4ecdc4';DCTX.fillRect(cx-8,cy-8,7,7);DCTX.fillRect(cx+1,cy+1,7,7);DCTX.fillStyle='#3abcb4';DCTX.fillRect(cx+1,cy-8,7,7);DCTX.fillRect(cx-8,cy+1,7,7);}
+        if(r.id===3){DCTX.fillStyle='#8a6020';DCTX.fillRect(cx-10,cy-4,20,12);DCTX.fillStyle='#aa8030';DCTX.fillRect(cx-10,cy-8,20,6);DCTX.fillStyle='#f5d020';DCTX.fillRect(cx-3,cy-5,6,5);DCTX.fillStyle='#ffee88';DCTX.fillRect(cx-1,cy-4,2,2);}
+        if(r.id===4){DCTX.fillStyle='rgba(78,205,196,.14)';DCTX.beginPath();DCTX.arc(cx,cy,12,0,Math.PI*2);DCTX.fill();DCTX.fillStyle='#4ecdc4';DCTX.fillRect(cx-2,cy-10,4,20);DCTX.fillRect(cx-10,cy-2,20,4);}
+        if(r.id===5){DCTX.fillStyle='#6a1a1a';DCTX.fillRect(cx-12,cy-6,24,14);DCTX.fillStyle='#aa2a2a';DCTX.fillRect(cx-10,cy-4,20,10);DCTX.fillStyle='rgba(200,0,0,.18)';DCTX.beginPath();DCTX.arc(cx,cy,14,0,Math.PI*2);DCTX.fill();}
+      }
+    } else {
+      for(let tx=r.x;tx<r.x+r.w;tx++)for(let ty=r.y;ty<r.y+r.h;ty++){DCTX.fillStyle=(tx+ty)%3===0?'#111008':'#0d0b06';DCTX.fillRect(tx*T,ty*T,T,T);}
+      DCTX.fillStyle='#1a1408';DCTX.fillRect(rx,ry,rw,2);DCTX.fillRect(rx,ry+rh-2,rw,2);DCTX.fillRect(rx,ry,2,rh);DCTX.fillRect(rx+rw-2,ry,2,rh);
+      DCTX.fillStyle='rgba(245,166,35,.1)';DCTX.font=`${T*1.2}px monospace`;DCTX.textAlign='center';DCTX.textBaseline='middle';
+      DCTX.fillText('🔒',rx+rw/2,ry+rh/2);
+    }
+  });
+  // hero
+  let cr=DROOMS[0];DROOMS.forEach(r=>{if(S.floorXP>=r.xp)cr=r;});
+  const tc=roomCenterW(cr);htx=tc.x;hty=tc.y-5;
+  hx+=(htx-hx)*.14;hy+=(hty-hy)*.14;
+  const bobY=Math.sin(torchT*2.8)*1.2;
+  DCTX.fillStyle='rgba(245,166,35,.2)';DCTX.beginPath();DCTX.ellipse(hx,hy+7,5,2,0,0,Math.PI*2);DCTX.fill();
+  DCTX.fillStyle='#c8781a';DCTX.fillRect(hx-4,hy-2+bobY,8,7);
+  DCTX.fillStyle='#f5a623';DCTX.fillRect(hx-3,hy-9+bobY,7,7);
+  DCTX.fillStyle='#fff';DCTX.fillRect(hx-2,hy-8+bobY,2,2);DCTX.fillRect(hx+1,hy-8+bobY,2,2);
+  DCTX.fillStyle='#000';DCTX.fillRect(hx-1,hy-7+bobY,1,1);DCTX.fillRect(hx+2,hy-7+bobY,1,1);
+  DCTX.fillStyle='#ccc';DCTX.fillRect(hx+4,hy-12+bobY,2,12);DCTX.fillStyle='#999';DCTX.fillRect(hx+2,hy-9+bobY,6,2);
+  DCTX.fillStyle='#f5d020';DCTX.fillRect(hx+4,hy-14+bobY,2,3);
+  DCTX.fillStyle='rgba(245,166,35,.2)';DCTX.beginPath();DCTX.arc(hx,hy-3+bobY,7,0,Math.PI*2);DCTX.fill();
+  if(zoomed){
+    const pulse=0.28+Math.sin(torchT*3)*0.12;
+    DCTX.strokeStyle=`rgba(245,166,35,${pulse})`;DCTX.lineWidth=1.5/camScale;
+    DCTX.beginPath();DCTX.arc(hx,hy-3+bobY,12/camScale+Math.sin(torchT*2),0,Math.PI*2);DCTX.stroke();
+  }
+  DCTX.restore();
+}
+function startMapLoop(){
+  const fv=getFullView();
+  setCamera(fv,true);
+  if(rafId)cancelAnimationFrame(rafId);
+  function loop(){drawDungeon();rafId=requestAnimationFrame(loop);}loop();
+}
+
+function toggleMap(){
+  zoomed=!zoomed;
+  if(zoomed){
+    let cr=DROOMS[0];DROOMS.forEach(r=>{if(S.floorXP>=r.xp)cr=r;});
+    setCamera(getRoomView(cr));
+    document.getElementById('dmap-hint').textContent='탭하면 전체 맵 👆';
+    document.getElementById('dmap-zoom-ind').style.display='block';
+  } else {
+    setCamera(getFullView());
+    document.getElementById('dmap-hint').textContent='탭하면 확대 👆';
+    document.getElementById('dmap-zoom-ind').style.display='none';
+  }
+}
+
+// ── FLOOR CLEAR ──────────────────────────
+function showFloorClear(newIdx){
+  if(newIdx>=DROOMS.length)return;
+  const prev=DROOMS[newIdx-1],next=DROOMS[newIdx];
+  launchConfetti();
+  const bg=document.createElement('div');bg.className='clear-bg';
+  bg.innerHTML=`<div class="clear-box">
+    <div class="clear-ring">🏆</div>
+    <div class="clear-title">방 클리어!</div>
+    <div class="clear-next">${prev.name} 정복!</div>
+    <div class="clear-desc">기억력이 점점 강해지고 있어요!<br>새로운 방이 열렸어요.</div>
+    <div style="background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:10px;padding:9px 13px;margin-bottom:15px;font-family:'Jua',sans-serif;font-size:.88rem;color:var(--accent3)">${next.name} 입장!</div>
+    <button class="clear-btn" onclick="this.closest('.clear-bg').remove()">계속 탐험하기 ➜</button>
+  </div>`;
+  document.body.appendChild(bg);
+}
+function launchConfetti(){
+  const cols=['#f5a623','#4ecdc4','#7c5cbf','#6bcb77','#ff6b6b','#fff'];
+  for(let i=0;i<38;i++){const el=document.createElement('div');el.className='confetti';el.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${cols[Math.floor(Math.random()*cols.length)]};animation-delay:${Math.random()*.7}s;animation-duration:${1+Math.random()*.7}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2100);}
+}
+
+// ── SUBJECT QUIZ ─────────────────────────
+async function startSubjectQuiz(subj){
+  const grade=S.quizGrade,unit=getTodayUnit(subj,grade),color=SUBJ_COLORS[subj];
+  openModal(`<div class="modal-hdr"><div class="modal-title" style="color:${color}">${grade}학년 ${subj} 퀴즈</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="ai-loading"><div class="spinner" style="border-top-color:${color}"></div>
+    <div class="ai-txt"><strong style="color:${color}">${unit.u}</strong><br>${unit.d}<br><span style="font-size:.7rem">문제 만드는 중...</span></div></div>`);
+  try{
+    const res=await fetch('/api/quiz',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({grade,subject:subj,unit:unit.u,desc:unit.d})});
+    const data=await res.json();
+    const quiz=JSON.parse(data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+    showQuizModal(subj,grade,unit,quiz,color);
+  }catch(e){showToast('문제 생성 실패. 다시 시도해주세요.','fail');closeModal();}
+}
+function showQuizModal(subj,grade,unit,quiz,color){
+  openModal(`<div class="modal-hdr"><div class="modal-title" style="color:${color}">${grade}학년 ${subj}</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind son-t">⚔️ ${S.sonName} · ${unit.u}</div>
+    <div class="quiz-qbox"><div class="quiz-sbadge" style="background:${color}22;color:${color}">${subj} ${grade}학년</div><br>${quiz.question}</div>
+    <div id="qopts">${quiz.options.map((o,i)=>`<button class="opt" style="display:block;width:100%;margin:5px 0;text-align:left;padding:11px 13px" onclick="checkQuizAns(this,${i},${quiz.answer},'${encodeURIComponent(quiz.explanation)}','${subj}','${encodeURIComponent(quiz.question)}')"><span style="color:${color};margin-right:7px;font-weight:800">${['①','②','③','④'][i]}</span>${o}</button>`).join('')}</div>
+    <div id="qexp" style="display:none"></div>`);
+}
+function checkQuizAns(btn,chosen,correct,encExp,subj,encQ){
+  const explanation=decodeURIComponent(encExp),question=decodeURIComponent(encQ),color=SUBJ_COLORS[subj];
+  document.querySelectorAll('#qopts .opt').forEach(b=>b.disabled=true);
+  const ok=chosen===correct;
+  if(ok){btn.classList.add('correct');addXP('son',30);S.totalQuizzes++;showToast('정답! +30 XP 🎉','success');}
+  else{btn.classList.add('wrong');document.querySelectorAll('#qopts .opt')[correct].classList.add('correct');showToast('틀렸어요. 해설을 읽어봐요 📖','fail');}
+  S.quizHistory.unshift({subj,q:question.slice(0,36)+(question.length>36?'...':''),ok,time:new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('qexp').style.display='block';
+  document.getElementById('qexp').innerHTML=`<div class="exp-box" style="border-left:3px solid ${ok?'var(--success)':'var(--danger)'}">💡 ${explanation}</div><button class="btn-primary" style="background:linear-gradient(135deg,${color},${color}bb)" onclick="closeModal()">닫기</button>`;
+  updateUI();
+}
+function renderQuizHistory(){
+  const list=document.getElementById('qh-list');if(!list)return;
+  document.getElementById('qh-count').textContent=`${S.quizHistory.length}회`;
+  if(!S.quizHistory.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div>과목을 골라 퀴즈를 시작해봐요!</div>`;return;}
+  list.innerHTML=S.quizHistory.slice(0,20).map(h=>`<div class="qr-item"><span class="qr-subj" style="background:${SUBJ_COLORS[h.subj]}22;color:${SUBJ_COLORS[h.subj]}">${h.subj}</span><span class="qr-q">${h.q}</span><span>${h.ok?'✅':'❌'}</span><span class="qr-time">${h.time}</span></div>`).join('');
+}
+
+// ── MISSION GAMES ────────────────────────
+function pickProblem(type){
+  if(type==='memory')memItems=MEM_ITEMS[Math.floor(Math.random()*3)].slice(0,7);
+  else if(type==='numbers')numSeq=NUM_SEQS[Math.floor(Math.random()*5)];
+  else facesShown=[...FACE_DATA].sort(()=>Math.random()-.5).slice(0,3);
+}
+function startGame(type){curGame=type;curTurn='mom';turnScores={mom:0,son:0};pickProblem(type);
+  if(type==='memory')showMemorize();else if(type==='numbers')showNumMemorize();else showFaceMemorize();
+}
+function startTimer(sec,cb){
+  timeLeft=sec;if(gTimer)clearInterval(gTimer);
+  gTimer=setInterval(()=>{timeLeft--;const el=document.getElementById('td'),fill=document.getElementById('tf');if(el)el.textContent=timeLeft;if(fill)fill.style.width=(timeLeft/sec*100)+'%';if(timeLeft<=0){clearInterval(gTimer);cb();}},1000);
+}
+function pLabel(p){return p==='mom'?`👑 ${S.momName}`:`⚔️ ${S.sonName}`;}
+function pClass(p){return p==='mom'?'mom-t':'son-t';}
+
+function showMemorize(){
+  const p=curTurn;
+  openModal(`<div class="modal-hdr"><div class="modal-title">🛒 단기 기억</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="phase-lbl">아이템을 외우세요! ⏱ <span id="td">5</span>초</div>
+    <div class="tbar"><div class="tbar-fill" id="tf" style="width:100%"></div></div>
+    <div class="mem-items">${memItems.map((it,i)=>`<div class="mem-item" style="animation-delay:${i*.08}s">${it}</div>`).join('')}</div>`);
+  startTimer(5,showMemRecall);
+}
+function showMemRecall(){
+  const p=curTurn;
+  const correct=memItems[Math.floor(Math.random()*memItems.length)];
+  const wrong=MEM_ITEMS.flat().filter(i=>!memItems.includes(i)).sort(()=>Math.random()-.5).slice(0,3);
+  const opts=[correct,...wrong].sort(()=>Math.random()-.5);
+  openModal(`<div class="modal-hdr"><div class="modal-title">🛒 단기 기억</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="phase-lbl">아까 목록에 있던 것은?</div>
+    <div class="ans-opts">${opts.map(o=>`<button class="opt" onclick="checkMemAns(this,'${o}','${correct}')">${o}</button>`).join('')}</div>`);
+}
+function checkMemAns(btn,chosen,correct){
+  document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  if(chosen===correct){btn.classList.add('correct');turnScores[curTurn]+=15;showToast('정답! 🎉','success');}
+  else{btn.classList.add('wrong');document.querySelectorAll('.opt').forEach(b=>{if(b.textContent.trim()===correct)b.classList.add('correct');});showToast('틀렸어요 😅','fail');}
+  setTimeout(()=>{if(curTurn==='mom'){curTurn='son';pickProblem('memory');showMemorize();}else showGameResult();},1200);
+}
+function showNumMemorize(){
+  const p=curTurn;
+  openModal(`<div class="modal-hdr"><div class="modal-title">🔢 숫자 순서</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="phase-lbl">순서를 외우세요! ⏱ <span id="td">4</span>초</div>
+    <div class="tbar"><div class="tbar-fill" id="tf" style="width:100%"></div></div>
+    <div class="mem-items">${numSeq.map((n,i)=>`<div class="mem-item" style="font-size:1.2rem;animation-delay:${i*.1}s">${n}</div>`).join('')}</div>`);
+  startTimer(4,showNumRecall);
+}
+function showNumRecall(){
+  const p=curTurn;
+  openModal(`<div class="modal-hdr"><div class="modal-title">🔢 숫자 순서</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="phase-lbl">숫자를 순서대로 입력하세요 (띄어쓰기로 구분)</div>
+    <input class="ans-input" id="num-inp" placeholder="예: 3 7 1 9 4"/>
+    <button class="btn-primary" onclick="checkNumAns()">제출</button>`);
+  setTimeout(()=>{const el=document.getElementById('num-inp');if(el)el.focus();},100);
+}
+function checkNumAns(){
+  const input=document.getElementById('num-inp')?.value.trim();
+  const ok=JSON.stringify(numSeq)===JSON.stringify(input.split(/\s+/).map(Number));
+  if(ok){turnScores[curTurn]+=20;showToast('완벽해요! 🎉','success');}
+  else{showToast(`정답: ${numSeq.join(' ')} 😅`,'fail');}
+  setTimeout(()=>{if(curTurn==='mom'){curTurn='son';pickProblem('numbers');showNumMemorize();}else showGameResult();},1500);
+}
+function showFaceMemorize(){
+  const p=curTurn;
+  openModal(`<div class="modal-hdr"><div class="modal-title">🎭 얼굴 이름</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="phase-lbl">얼굴과 이름을 외우세요! ⏱ <span id="td">6</span>초</div>
+    <div class="tbar"><div class="tbar-fill" id="tf" style="width:100%"></div></div>
+    <div class="faces-grid">${facesShown.map(f=>`<div class="face-card"><span class="face-emoji">${f.emoji}</span><span class="face-name">${f.name}</span><div style="font-size:.66rem;color:var(--muted);margin-top:2px">${f.trait}</div></div>`).join('')}</div>`);
+  startTimer(6,showFaceRecall);
+}
+function showFaceRecall(){
+  const p=curTurn;
+  const q=facesShown[Math.floor(Math.random()*facesShown.length)];
+  const wrong=FACE_DATA.filter(f=>f.name!==q.name).map(f=>f.name).sort(()=>Math.random()-.5).slice(0,2);
+  const opts=[q.name,...wrong].sort(()=>Math.random()-.5);
+  openModal(`<div class="modal-hdr"><div class="modal-title">🎭 얼굴 이름</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="turn-ind ${pClass(p)}">${pLabel(p)}의 차례</div>
+    <div class="faces-grid" style="grid-template-columns:1fr;max-width:95px;margin:0 auto 10px"><div class="face-card"><span class="face-emoji">${q.emoji}</span></div></div>
+    <div style="text-align:center;font-size:.84rem;color:var(--muted);margin-bottom:9px">이름은? <span style="color:var(--accent3);font-weight:800">(${q.trait})</span></div>
+    ${opts.map(name=>`<button class="face-opt" onclick="checkFaceAns(this,'${name}','${q.name}')">${name}</button>`).join('')}`);
+}
+function checkFaceAns(btn,chosen,correct){
+  document.querySelectorAll('.face-opt').forEach(b=>b.disabled=true);
+  if(chosen===correct){btn.classList.add('correct');turnScores[curTurn]+=15;showToast('맞았어요! 🎉','success');}
+  else{btn.classList.add('wrong');document.querySelectorAll('.face-opt').forEach(b=>{if(b.textContent.trim()===correct)b.classList.add('correct');});showToast('틀렸어요 😅','fail');}
+  setTimeout(()=>{if(curTurn==='mom'){curTurn='son';pickProblem('faces');showFaceMemorize();}else showGameResult();},1200);
+}
+function showGameResult(){
+  const ms=turnScores.mom,ss=turnScores.son;
+  const winner=ms>ss?`👑 ${S.momName}`:ss>ms?`⚔️ ${S.sonName}`:null;
+  addXP('mom',15+ms);addXP('son',15+ss);
+  markDone(curGame);
+  openModal(`<div class="modal-hdr"><div class="modal-title">🎯 결과</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    ${winner?`<div class="winner-banner"><div class="winner-txt">🏆 ${winner} 승리!</div></div>`:'<div class="winner-banner"><div class="winner-txt">🤝 무승부!</div></div>'}
+    <div class="versus">
+      <div class="res-box" style="border:1px solid var(--mom)"><div class="res-score mom">${ms}점</div><div class="res-lbl">👑 ${S.momName}</div></div>
+      <div class="vs-txt">VS</div>
+      <div class="res-box" style="border:1px solid var(--son)"><div class="res-score son">${ss}점</div><div class="res-lbl">⚔️ ${S.sonName}</div></div>
+    </div>
+    <button class="btn-primary" onclick="closeModal()">계속하기</button>`);
+  updateUI();
+}
+function markDone(type){
+  if(!S.completedMissions.includes(type)){
+    S.completedMissions.push(type);S.streak++;S.totalMissions++;
+    const btn=document.getElementById('mission-'+type);
+    if(btn){btn.classList.add('locked');const b=document.createElement('div');b.className='mb-badge';b.textContent='완료';btn.appendChild(b);}
+  }
+}
+
+// ── MODAL ────────────────────────────────
+function openModal(html){document.getElementById('modal-content').innerHTML=html;document.getElementById('modal').classList.add('active');}
+function closeModal(){document.getElementById('modal').classList.remove('active');if(gTimer)clearInterval(gTimer);updateUI();}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+
+// ── RESET ────────────────────────────────
+function confirmReset(){
+  openModal(`<div class="modal-hdr"><div class="modal-title" style="color:var(--danger)">⚠️ 기록 초기화</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="text-align:center;padding:13px 0;color:var(--muted);font-size:.86rem;line-height:1.7">모든 점수·XP·퀴즈 기록이 삭제돼요.<br>이름과 학년은 유지돼요.</div>
+    <button class="btn-primary" style="background:linear-gradient(135deg,var(--danger),#cc4444)" onclick="doReset()">초기화하기</button>
+    <button style="background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:11px;color:var(--muted);font-family:'Jua',sans-serif;font-size:.86rem;cursor:pointer;width:100%;margin-top:8px" onclick="closeModal()">취소</button>`);
+}
+function doReset(){
+  const keep={momName:S.momName,sonName:S.sonName,grade:S.grade,quizGrade:S.quizGrade};
+  S={...DEF,...keep,mom:{...DEF.mom},son:{...DEF.son},completedMissions:[]};
+  ['memory','numbers','faces'].forEach(t=>{const b=document.getElementById('mission-'+t);if(b){b.classList.remove('locked');b.querySelector('.mb-badge')?.remove();}});
+  save();closeModal();showToast('기록 초기화됨 🗑️','info');
+}
+
+// ── INIT ─────────────────────────────────
+// Auth state는 sb.auth.onAuthStateChange가 처리함
+document.querySelectorAll('.grade-btn')[2].classList.add('active');
+obGrade=3;
+// 초기 auth overlay 표시
+document.getElementById('auth-overlay').style.display='flex';
+</script>
+</body>
+</html>
